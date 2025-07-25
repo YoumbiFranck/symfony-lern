@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block title %} toutes les recettes {% endblock %}
+
+{% block body %}
+
+    <p>toutes les recettes seront listés ici </p>
+
+    <ul>
+        <li>
+            <a href="{{ path("recipe.show", {id:32, slug:'pattes-bolognaises'}) }}">Pattes bolognaises</a>
+        </li>
+    </ul>
+
+
+
+{% endblock %}
+
+
