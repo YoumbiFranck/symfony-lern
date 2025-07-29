@@ -4,12 +4,14 @@
 
 {% block body %}
 
-    <p>toutes les recettes seront listés ici </p>
+    <p>Toutes les recettes seront listés ici </p>
 
     <ul>
+        {% for recipe in recipes %}
         <li>
-            <a href="{{ path("recipe.show", {id:32, slug:'pattes-bolognaises'}) }}">Pattes bolognaises</a>
+            <a href="{{ path("recipe.show", {id: recipe.id, slug: recipe.slug }) }}"> {{ recipe.title }} </a>
         </li>
+        {% endfor %}
     </ul>
 
 
@@ -17,3 +19,168 @@
 {% endblock %}
 
 
+
+
+
+{#
+
+Je vais vous expliquer en détail le fonctionnement de la boucle `{% for recipe in recipes %}` dans Twig.
+
+## Structure de la boucle Twig
+
+```twig
+{% for recipe in recipes %}
+<!-- Contenu de la boucle -->
+<li>
+    <a href="{{ path("recipe.show", {id: recipe.id, slug: recipe.slug }) }}">
+        {{ recipe.title }}
+    </a>
+</li>
+{% endfor %}
+```
+
+## Fonctionnement étape par étape
+
+### 1. Initialisation de la boucle
+
+Quand Twig rencontre `{% for recipe in recipes %}` :
+- Il récupère la variable `recipes` (le tableau d'objets Recipe passé depuis le contrôleur)
+- Il initialise un compteur interne à 0
+- Il prépare l'itération sur chaque élément du tableau
+
+### 2. Première itération
+
+```twig
+{% for recipe in recipes %}  <!-- recipe = recipes[0] -->
+```
+- Twig prend le premier élément du tableau `recipes[0]`
+- Il l'assigne à la variable temporaire `recipe`
+- Cette variable `recipe` contient maintenant le premier objet `Recipe`
+
+### 3. Accès aux propriétés de l'objet
+
+```twig
+{{ recipe.title }}    <!-- Appelle $recipe->getTitle() -->
+{{ recipe.id }}       <!-- Appelle $recipe->getId() -->
+{{ recipe.slug }}     <!-- Appelle $recipe->getSlug() -->
+```
+
+**Important :** Quand vous écrivez `recipe.title` en Twig, voici ce qui se passe dans l'ordre :
+
+1. Twig cherche d'abord une propriété publique `$title`
+2. Si elle n'existe pas, il cherche une méthode `getTitle()`
+3. Si elle n'existe pas, il cherche une méthode `isTitle()` (pour les booléens)
+4. Si elle n'existe pas, il cherche une méthode `hasTitle()`
+5. Si rien n'est trouvé, il retourne `null`
+
+Dans notre cas, il trouve et exécute `getTitle()`, `getId()`, `getSlug()`.
+
+### 4. Itérations suivantes
+
+```twig
+<!-- Itération 2 -->
+{% for recipe in recipes %}  <!-- recipe = recipes[1] -->
+
+<!-- Itération 3 -->
+{% for recipe in recipes %}  <!-- recipe = recipes[2] -->
+
+<!-- etc... -->
+```
+
+À chaque itération :
+- Le compteur interne s'incrémente
+- La variable `recipe` pointe vers l'objet suivant dans le tableau
+- Le contenu entre `{% for %}` et `{% endfor %}` est rendu avec les nouvelles données
+
+### 5. Fin de boucle
+
+Quand tous les éléments ont été traités :
+- Twig atteint `{% endfor %}`
+- La variable `recipe` n'est plus accessible après ce point
+- La boucle se termine
+
+## Variables spéciales de boucle
+
+Twig fournit des variables spéciales dans les boucles via l'objet `loop` :
+
+```twig
+{% for recipe in recipes %}
+<li class="{% if loop.first %}first{% endif %} {% if loop.last %}last{% endif %}">
+    Recette #{{ loop.index }} : {{ recipe.title }}
+    {% if not loop.last %} | {% endif %}
+</li>
+{% endfor %}
+```
+
+**Variables disponibles :**
+- `loop.index` : Position actuelle (commence à 1)
+- `loop.index0` : Position actuelle (commence à 0)
+- `loop.first` : `true` si c'est le premier élément
+- `loop.last` : `true` si c'est le dernier élément
+- `loop.length` : Nombre total d'éléments
+- `loop.revindex` : Nombre d'itérations restantes (finit à 1)
+- `loop.revindex0` : Nombre d'itérations restantes (finit à 0)
+
+## Exemple concret avec données
+
+Supposons que `recipes` contienne 3 objets Recipe :
+
+```php
+// Depuis le contrôleur
+$recipes = [
+Recipe(id: 1, title: "Tarte aux pommes", slug: "tarte-aux-pommes"),
+Recipe(id: 2, title: "Bœuf bourguignon", slug: "boeuf-bourguignon"),
+Recipe(id: 3, title: "Ratatouille", slug: "ratatouille")
+];
+```
+
+**Itération 1 :**
+```twig
+recipe = Recipe(id: 1, title: "Tarte aux pommes", slug: "tarte-aux-pommes")
+loop.index = 1, loop.first = true, loop.last = false
+```
+Génère : `<li><a href="/recipe/1/tarte-aux-pommes">Tarte aux pommes</a></li>`
+
+**Itération 2 :**
+```twig
+recipe = Recipe(id: 2, title: "Bœuf bourguignon", slug: "boeuf-bourguignon")
+loop.index = 2, loop.first = false, loop.last = false
+```
+Génère : `<li><a href="/recipe/2/boeuf-bourguignon">Bœuf bourguignon</a></li>`
+
+**Itération 3 :**
+```twig
+recipe = Recipe(id: 3, title: "Ratatouille", slug: "ratatouille")
+loop.index = 3, loop.first = false, loop.last = true
+```
+Génère : `<li><a href="/recipe/3/ratatouille">Ratatouille</a></li>`
+
+## Gestion des cas particuliers
+
+### Tableau vide
+```twig
+{% for recipe in recipes %}
+<li>{{ recipe.title }}</li>
+{% else %}
+<p>Aucune recette trouvée</p>
+{% endfor %}
+```
+
+Si `recipes` est vide, le contenu après `{% else %}` sera affiché.
+
+### Filtrage dans la boucle
+```twig
+{% for recipe in recipes if recipe.duration %}
+<li>{{ recipe.title }} ({{ recipe.duration }} min)</li>
+{% endfor %}
+```
+
+Cette boucle ne traite que les recettes qui ont une durée définie.
+
+La boucle Twig est donc un mécanisme puissant et flexible qui permet d'itérer facilement sur des collections tout en offrant un contrôle fin sur le rendu et l'accès à des métadonnées utiles sur l'itération en cours.
+
+
+
+
+
+#}
